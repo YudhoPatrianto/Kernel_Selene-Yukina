@@ -225,6 +225,7 @@ KBUILD_DTBO_IMG := dtbo.img
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 export MTK_PLATFORM MTK_PROJECT
+-include $(srctree)/scripts/drvgen/drvgen.mk
 
 Image: vmlinux
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
