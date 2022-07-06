@@ -674,20 +674,6 @@ ARCH_AFLAGS :=
 ARCH_CFLAGS :=
 include arch/$(SRCARCH)/Makefile
 
-CL_FLAGS += -O3 -mcpu=cortex-a55+crypto+crc
-GC_FLAGS += -O3 -mcpu=cortex-a75.cortex-a55+crypto+crc
-
-ifeq ($(cc-name),gcc)
-KBUILD_CFLAGS  += $(GC_FLAGS)
-KBUILD_AFLAGS  += $(GC_FLAGS)
-KBUILD_LDFLAGS += $(GC_FLAGS)
-endif
-ifeq ($(cc-name),clang)
-KBUILD_CFLAGS  += $(CL_FLAGS)
-KBUILD_AFLAGS  += $(CL_FLAGS)
-KBUILD_LDFLAGS += $(CL_FLAGS)
-endif
-
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-truncation)
@@ -702,15 +688,12 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, array-compare)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS   += -Os
 else
+KBUILD_CFLAGS   += -O3
 ifeq ($(cc-name),gcc)
-KBUILD_CFLAGS  += $(GC_FLAGS)
-KBUILD_AFLAGS  += $(GC_FLAGS)
-KBUILD_LDFLAGS += $(GC_FLAGS)
+KBUILD_CFLAGS   += -mcpu=cortex-a75.cortex-a55 -mtune=cortex-a75.cortex-a55
 endif
 ifeq ($(cc-name),clang)
-KBUILD_CFLAGS  += $(CL_FLAGS)
-KBUILD_AFLAGS  += $(CL_FLAGS)
-KBUILD_LDFLAGS += $(CL_FLAGS)
+KBUILD_CFLAGS   += -mcpu=cortex-a55 -mtune=cortex-a55
 endif
 endif
 
@@ -781,7 +764,7 @@ endif
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 
 ifeq ($(ld-name),lld)
-LDFLAGS += -O3 --strip-debug
+LDFLAGS += -O3
 endif
 
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
