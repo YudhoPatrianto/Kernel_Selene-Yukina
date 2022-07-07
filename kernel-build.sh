@@ -93,6 +93,7 @@ tg_post_msg "<b>New Kernel Under Compilation</b>%0ADate : <code>$(TZ=Asia/Jakart
     STRIP=llvm-strip
     CROSS_COMPILE=aarch64-linux-gnu-
     CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+    CONFIG_DEBUG_SECTION_MISMATCH=y
 )
 
 # Compile
