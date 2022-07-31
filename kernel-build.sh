@@ -18,7 +18,7 @@ GCC64_DIR=$(pwd)/GCC64
 GCC32_DIR=$(pwd)/GCC32
 
 msg "|| Cloning Toolchain ||"
-git clone --depth=1 https://gitlab.com/dakkshesh07/neutron-clang -b Neutron-15 $CLANG_ROOTDIR
+git clone --depth=1 https://gitlab.com/dakkshesh07/neutron-clang clang-llvm
 
 # Main Declaration
 MODEL=Redmi 10
@@ -39,6 +39,8 @@ DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
 DISTRO=$(source /etc/os-release && echo "${NAME}")
 export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
 PATH="${PATH}:${CLANG_ROOTDIR}/bin"
+echo "CONFIG_THINLTO=n" >> arch/arm64/configs/"$DEVICE_DEFCONFIG"
+echo "CONFIG_LTO_CLANG=y" >> arch/arm64/configs/"$DEVICE_DEFCONFIG"
 
 #Check Kernel Version
 KERVER=$(make kernelversion)
@@ -83,19 +85,39 @@ tg_post_msg() {
 }
 
 # Post Main Information
-tg_post_msg "<b>New Kernel Under Compilation</b>%0ADate : <code>$(TZ=Asia/Jakarta date)</code>%0A<code> --- Detail Info About it --- </code>%0A<b>- Docker OS: </b><code>$DISTRO</code>%0A- Kernel Name : <code>${KERNEL_NAME}</code>%0A- Kernel Version : <code>${KERVER}</code>%0A- Builder Name : <code>${KBUILD_BUILD_USER}</code>%0A- Builder Host : <code>${KBUILD_BUILD_HOST}</code>%0A- Pipeline Host : <code>$DRONE_SYSTEM_HOSTNAME</code>%0A- Host Core Count : <code>$PROCS</code>%0A- Compiler Used : <code>${KBUILD_COMPILER_STRING}</code>%0A- Branch : <code>$CI_BRANCH</code>%0A- Top Commit : <code>$COMMIT_HEAD</code>%0A<a href='$SERVER_URL'>Link</a>"
+tg_post_msg "
+<b>======= Yukina-Kernel =========</b>
+<b>• Date</b> : <code>$(TZ=Asia/Jakarta date)</code>
+<b>• Docker OS</b> : <code>$DISTRO</code>
+<b>• Kernel Name</b> : <code>${KERNEL_NAME}</code>
+<b>• Kernel Version</b> : <code>${KERVER}</code>
+<b>• Builder Name</b> : <code>${KBUILD_BUILD_USER}</code>
+<b>• Builder Host</b> : <code>${KBUILD_BUILD_HOST}</code>
+<b>• Pipeline Host</b> : <code>$DRONE_SYSTEM_HOSTNAME</code>
+<b>• Host Core Count</b> : <code>$PROCS</code>
+<b>• Compiler</b> : <code>${KBUILD_COMPILER_STRING}</code>
+<b>• Top Commit</b> : <code>${COMMIT_HEAD}</code>
+<b>=================================</b>
+"
 
-   MAKE+=(
+  MAKE+=(
     CC=clang
-    AR=llvm-ar
     NM=llvm-nm
-    OBJDUMP=llvm-objdump
+    CXX=clang++
+    AR=llvm-ar
+    LD=ld.lld
     STRIP=llvm-strip
+    OBJDUMP=llvm-objdump
+    OBJSIZE=llvm-size
+    READELF=llvm-readelf
     CROSS_COMPILE=aarch64-linux-gnu-
     CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-    CONFIG_DEBUG_SECTION_MISMATCH=y
-)
-
+    HOSTAR=llvm-ar
+    HOSTLD=ld.lld
+    HOSTCC=clang
+    HOSTCXX=clang++
+ )
+ 
 # Compile
 compile(){
 msg "|| Started Compilation ||"
@@ -122,12 +144,24 @@ function push() {
     ZIP=$(echo *.zip)
     MD5CHECK=$(md5sum "${ZIP}" | cut -d' ' -f1)
     SHA1CHECK=$(sha1sum "${ZIP}" | cut -d' ' -f1)
-    tg_post_msg "✅ <b>Build Success</b>%0A- <code>$((DIFF / 60)) minute(s) $((DIFF % 60)) second(s) </code>%0A<b>MD5 Checksum</b>%0A- <code>${MD5CHECK}</code>%0A<b>SHA1 Checksum</b>%0A- <code>${SHA1CHECK}</code>%0A<b>Under Commit Id Message</b>%0A- <code>${COMMIT_HEAD}</code>%0A<b>Compilers</b>%0A- <code>$KBUILD_COMPILER_STRING</code>%0A<b>Zip Name</b>%0A- <code>${ZIP_NAME}</code>%0A%0A-- Happy Using --"
+tg_post_msg "
+<b>=================================</b>
+✅ <b>Build Success</b>
+- <code>$((DIFF / 60)) minute(s) $((DIFF % 60)) second(s) </code>
+<b>• MD5 Checksum</b>
+- <code>${MD5CHECK}</code>
+<b>• SHA1 Checksum</b>
+- <code>${SHA1CHECK}</code>
+<b>• Zip Name</b>
+- <code>${ZIP_NAME}</code>
+<b>=================================</b>
+"
+
     curl -F document=@$ZIP "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
         -F chat_id="$TG_CHAT_ID" \
         -F "disable_web_page_preview=true" \
         -F "parse_mode=html" \
-        -F caption="✅ Compile took $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+        -F caption="$2"
 }
 # Fin Error
 function finerr() {
